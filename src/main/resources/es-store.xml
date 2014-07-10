@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configurable properties:
+        index: ES index to store data in, default "twitterIndex"
+        cluster: ES cluster to connect to, default "Dazzler"
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <!-- ES node client; connects locally -->
+    <!-- TODO: expose connection properties -->
+    <!--<elasticsearch:node-client id="client" local="true"/>-->
+    <!--<elasticsearch:transport-client id="client" cluster-nodes="ip:9300,ip:9300" cluster-name="${cluster:Dazzler}" />-->
+    <bean id="client" class="org.springframework.data.elasticsearch.client.TransportClientFactoryBean">
+        <property name="clusterName" value="${cluster:Dazzler}"/>
+        <property name="clusterNodes" value="localhost:9300,localhost:9200"/>
+    </bean>
+
+    <!-- Spring template for ES -->
+    <bean name="elasticSearchTemplate" class="org.springframework.data.elasticsearch.core.ElasticsearchTemplate">
+        <constructor-arg name="client" ref="client"/>
+    </bean>
+
+    <!-- custom class to handle storing stuff -->
+    <bean id="elasticSearchStore" class="xdhomework.ElasticSearchStore">
+        <property name="template" ref="elasticSearchTemplate"/>
+        <property name="index" value="${index:twitterIndex}"/>
+    </bean>
+
+    <!-- our integration channel; since we're a sink we just have an input named 'input' by convention -->
+    <int:channel id="input" />
+
+    <!-- adapter for data outbound on the 'input' channel; to be fed into ES via the template -->
+    <int:outbound-channel-adapter id="elasticSearchAdapter" channel="input" ref="elasticSearchStore" method="store"/>
+
+</beans>

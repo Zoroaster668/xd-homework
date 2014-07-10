@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <context:property-placeholder />
+
+    <!-- creates a "TESTING" message once per second -->
+    <int:inbound-channel-adapter channel="input" expression="'TESTING'">
+        <int:poller fixed-rate="1000" />
+    </int:inbound-channel-adapter>
+
+    <!-- TODO: would probably want to expose connection properties also in case of nonlocal ES cluster or nonstandard ports -->
+    <!-- ES client and template used to verify that we actually did insert something -->
+    <!--<elasticsearch:transport-client id="testClient" cluster-nodes="localhost:9300" cluster-name="${cluster:Dazzler}" />-->
+    <!-- apparently xd doesn't like the elasticsearch namespace, so here's client using basic Spring stuff -->
+    <bean id="testClient" class="org.springframework.data.elasticsearch.client.TransportClientFactoryBean">
+        <property name="clusterName" value="${cluster:Dazzler}"/>
+        <property name="clusterNodes" value="localhost:9300,localhost:9200"/>
+    </bean>
+
+    <bean name="elasticSearchTestTemplate" class="org.springframework.data.elasticsearch.core.ElasticsearchTemplate">
+        <constructor-arg name="client" ref="testClient"/>
+    </bean>
+
+</beans>
